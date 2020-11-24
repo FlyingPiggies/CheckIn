@@ -1,32 +1,26 @@
 import base64
-import os
 import random
-import schedule
 from datetime import datetime, timedelta
-from os.path import isfile, join
 from uuid import uuid4
 
 import requests
+import schedule
 from requests_toolbelt import MultipartEncoder
 
-import login
+import askforleave
 import holiday2
-import askforleave2
+import login
 
-image_path = 'images'
-
-
-def getBase64String(path):
-    with open(path, 'rb') as f:
-        base64_data = base64.b64encode(f.read())
-        s = base64_data.decode()
-        return s
+image_api = 'https://api.yuzhitu.cn//sjbz/api.php?method=mobile&lx=fengjing'
 
 
-def get_image():
-    files = [f for f in os.listdir(image_path) if isfile(join(image_path, f))]
-    image = files[random.randint(0, len(files) - 1)]
-    return 'data:image/jpeg;base64,%s' % getBase64String(join(image_path, image))
+def get_random_image():
+    response = requests.request("GET", image_api)
+
+    base64str = "data:" + response.headers['Content-Type'] + ";" + "base64," + str(
+        base64.b64encode(response.content).decode('utf-8'))
+
+    return base64str
 
 
 def get_random_jd():
@@ -76,7 +70,7 @@ def checkin(s):
         'fieldname_FL2': '上下班',
         'fieldname_BZ': '上下班',
         'type_BZ': 'textarea_1',
-        'fieldname_ZP': get_image(),
+        'fieldname_ZP': get_random_image(),
         'type_ZP': 'photo'
     }
 
@@ -101,7 +95,7 @@ def checkin(s):
 
 
 def run():
-    if not holiday2.isholiday() and not askforleave2.isleave():
+    if not holiday2.isholiday() and not askforleave.isleave():
         session = requests.Session()
         login.get_config(session)
         login.login(session)
